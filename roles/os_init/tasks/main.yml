@@ -49,3 +49,9 @@
 - name: Set os parameters
   include_tasks: pkg.yml
 
+- name: Install python3
+  shell: |
+    yum install -y python3
+- name: Install ntp
+  shell: |
+    yum install -y ntp && systemctl  enable ntp && systemctl  start ntp
