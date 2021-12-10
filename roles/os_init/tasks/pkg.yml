@@ -1,0 +1,40 @@
+---
+
+- name: Disable system swap
+  shell: "swapoff -a"
+  tags:
+    - os_init
+
+- name: Stop system firewalld selinux
+  shell: |
+    systemctl stop firewalld
+    systemctl disable firewalld
+    setenforce 0
+    sed -i 's/enforcing/disabled/g' /etc/selinux/config
+  tags:
+    - os_init
+
+- name: Remove current swaps from fstab
+  lineinfile:
+    dest: /etc/fstab
+    regexp: '(?i)^([^#][\S]+\s+(none|swap)\s+swap.*)'
+    line: '# \1'
+    backrefs: yes
+    state: present
+  tags:
+    - os_init
+
+- name: Disable swappiness and pass bridged IPv4 traffic to iptable's chains
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  with_items:
+    - { name: 'vm.swappiness', value: '0' }
+    - { name: 'net.ipv4.ip_forward', value: '1' }
+    - { name: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+    - { name: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+    - { name: 'net.bridge.bridge-nf-call-arptables', value: '1' }
+  ignore_errors: yes
+  tags:
+    - os_init

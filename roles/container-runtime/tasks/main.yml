@@ -1,0 +1,81 @@
+---
+- name: Mkdir  etc_docker
+  file:
+    path: /etc/docker
+    state: directory
+  tags:
+    - container-runtime
+
+- name: Check nvidia card
+  shell: |
+    nvidia-smi
+  register: check_nvidia_card 
+  ignore_errors: yes 
+  tags:
+    - container-runtime
+
+- name: Set fact use docker-ce
+  when: check_nvidia_card is failed
+  set_fact:
+    container_runtime: docker-ce
+  tags:
+    - container-runtime
+
+- name: Set fact use nvidia-docker
+  when: check_nvidia_card is succeeded
+  set_fact:
+    container_runtime: nvidia-docker
+  tags:
+    - container-runtime
+
+
+- name: Remove installed container runtime
+  ignore_errors: yes
+  shell: |
+      yum remove -y docker-ce nvidia-docker nvidia-docker2 containerd docker-ce-cli  device-mapper-persistent-data lvm2
+      #rm  -rf   {{docker_root_dir}}
+  tags:
+    - container-runtime
+
+- name: Install container runtime
+  shell: |
+    yum install -y yum-utils
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    yum makecache
+    yum  install -y device-mapper-persistent-data lvm2
+    yum -y install docker-ce-{{docker_version}}
+  tags:
+    - container-runtime
+
+- name: Delete docker daemon.json
+  file:
+    path: /etc/docker/daemon.json
+    state: absent
+  tags:
+    - container-runtime
+
+- name: Configure docker
+  when: container_runtime == "docker-ce"
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+  tags:
+    - container-runtime
+
+- name: Configure nvidia docker
+  when: container_runtime == "nvidia-docker"
+  template:
+    src: daemon-gpu.json.j2
+    dest: /etc/docker/daemon.json
+  tags:
+    - container-runtime
+
+- name: Enable and check Docker service
+  systemd:
+    name: docker
+    daemon_reload: yes
+    state: started
+    enabled: yes
+  tags:
+    - container-runtime
+

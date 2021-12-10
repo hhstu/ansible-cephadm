@@ -1,0 +1,12 @@
+---
+- hosts: cluster
+  gather_facts: yes 
+  become: yes 
+  roles:
+    - { role: os_init, tags: os_init } 
+    - { role: container-runtime, tags: container-runtime }
+    #- { role: keepalived, tags: keepalived }
+
+
+
+

@@ -1,0 +1,61 @@
+---
+- name: Uninstall old  keepalived
+  when: "'keepalived-master' in roles or 'keepalived-backup' in roles"
+  shell: |
+    yum remove -y keepalived
+  ignore_errors: yes
+  tags:
+    - keepalived
+
+- name: Create keepalived config dir
+  when: "'keepalived-master' in roles or 'keepalived-backup' in roles"
+  file:
+    path: "/etc/keepalived"
+    state: directory
+  tags:
+    - keepalived
+
+- name: Install keepalived
+  when: "'keepalived-master' in roles or 'keepalived-backup' in roles"
+  register: install_keepalived
+  shell: |
+    yum install -y keepalived
+  tags:
+    - keepalived
+
+
+- name: Copy master conf
+  when: "'keepalived-master' in roles"
+  template:
+    src: master.conf
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode:  0644
+    trim_blocks: no
+  tags:
+    - keepalived
+
+- name: Copy backup conf
+  when: "'keepalived-backup' in roles"
+  template:
+    src: backup.conf
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode:  0644
+    trim_blocks: no
+  tags:
+    - keepalived
+
+- name: Enable and start keepalived
+  when: "'keepalived-master' in roles or 'keepalived-backup' in roles"
+  register: enable_and_start_keepalived
+  systemd:
+    name: keepalived
+    daemon_reload: yes
+    state: started
+    enabled: yes
+  tags:
+    - keepalived
+
