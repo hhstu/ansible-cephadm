@@ -49,9 +49,30 @@
 - name: Set os parameters
   include_tasks: pkg.yml
 
+- name: rm yum repo
+  shell: |
+    rm  -rf  /etc/yum.repos.d/*
+- name: yum repo
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    trim_blocks: no
+  with_items:
+  - { src: "CentOS-Base.repo", dest: "/etc/yum.repos.d/CentOS-Base.repo" }
+  - { src: "CentOS-Debuginfo.repo", dest: "/etc/yum.repos.d/CentOS-Debuginfo.repo" }
+  - { src: "CentOS-Media.repo", dest: "/etc/yum.repos.d/CentOS-Media.repo" }
+  - { src: "CentOS-Vault.repo", dest: "/etc/yum.repos.d/CentOS-Vault.repo" }
+  - { src: "CentOS-CR.repo", dest: "/etc/yum.repos.d/CentOS-CR.repo" }
+  - { src: "CentOS-fasttrack.repo", dest: "/etc/yum.repos.d/CentOS-fasttrack.repo" }
+  - { src: "CentOS-Sources.repo", dest: "/etc/yum.repos.d/CentOS-Sources.repo" }
+  - { src: "CentOS-x86_64-kernel.repo", dest: "/etc/yum.repos.d/CentOS-x86_64-kernel.repo" }
+- name: make cache
+  shell: |
+    yum makecache
+
 - name: Install python3
   shell: |
     yum install -y python3
 - name: Install ntp
   shell: |
-    yum install -y ntp && systemctl  enable ntp && systemctl  start ntp
+    yum install -y ntp ntpdate && systemctl  enable ntpd && systemctl  start ntpd
